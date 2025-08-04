@@ -62,13 +62,13 @@ npm install
 
 ### 4. Configurar Variables de Entorno
 
-Crea un archivo llamado `.env.local` en la raíz del proyecto copiando el ejemplo `.env.example`:
+Crea un archivo llamado `.env` en la raíz del proyecto copiando el ejemplo `.env.example`:
 
 \`\`\`bash
 cp .env.example .env.local
 \`\`\`
 
-Ahora, edita el archivo `.env.local` y añade tus propias claves:
+Ahora, edita el archivo `.env` y añade tus propias claves:
 
 ```plaintext file=".env.local"
 # URL de conexión a tu base de datos MongoDB Atlas
