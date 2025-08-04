@@ -2,8 +2,6 @@
 
 Finanzas.io es una aplicación web completa y moderna diseñada para ayudarte a tomar el control total de tus finanzas personales. Con una interfaz intuitiva y potentes funcionalidades, puedes rastrear tus ingresos y gastos, gestionar deudas, establecer objetivos de ahorro y obtener una visión clara de tu salud financiera, todo ello potenciado con un asistente de IA.
 
-![Captura de pantalla del Dashboard de Finanzas.io](https://blob.v0.dev/pjtmy8OGJ.png)
-
 ## ✨ Funcionalidades Principales
 
 La aplicación está repleta de características para cubrir todas tus necesidades financieras:
