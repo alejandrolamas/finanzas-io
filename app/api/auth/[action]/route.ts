@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 import dbConnect from "@/lib/dbConnect"
 import User from "@/models/User"
 import bcrypt from "bcryptjs"
+import { requireAuth } from "@/lib/auth"
 
 async function setAuthCookies(userId: string, username: string) {
   const cookieStore = cookies()
@@ -45,6 +46,32 @@ export async function POST(request: Request, { params }: { params: { action: str
     }
   }
 
+  if (action === "signup") {
+    try {
+      const { username, password } = await request.json()
+      if (!password || password.length < 6) {
+        return NextResponse.json(
+          { success: false, error: "La contraseña debe tener al menos 6 caracteres." },
+          { status: 400 },
+        )
+      }
+      const existingUser = await User.findOne({ username: username.toLowerCase() })
+      if (existingUser) {
+        return NextResponse.json({ success: false, error: "El nombre de usuario ya existe." }, { status: 409 })
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10)
+      const newUser = new User({ username, password: hashedPassword })
+      await newUser.save()
+
+      await setAuthCookies(newUser._id.toString(), newUser.username)
+
+      return NextResponse.json({ success: true, data: { userId: newUser._id, username: newUser.username } })
+    } catch (error) {
+      return NextResponse.json({ success: false, error: "Error durante el registro." }, { status: 500 })
+    }
+  }
+
   if (action === "login") {
     try {
       const { username, password } = await request.json()
@@ -71,6 +98,38 @@ export async function POST(request: Request, { params }: { params: { action: str
     const cookieStore = cookies()
     cookieStore.delete("session")
     return NextResponse.json({ success: true })
+  }
+
+  if (action === "change-password") {
+    try {
+      const { userId } = await requireAuth()
+      const { oldPassword, newPassword } = await request.json()
+
+      if (!newPassword || newPassword.length < 6) {
+        return NextResponse.json(
+          { success: false, error: "La nueva contraseña debe tener al menos 6 caracteres." },
+          { status: 400 },
+        )
+      }
+
+      const user = await User.findById(userId)
+      if (!user) {
+        return NextResponse.json({ success: false, error: "Usuario no encontrado." }, { status: 404 })
+      }
+
+      const isMatch = await bcrypt.compare(oldPassword, user.password)
+      if (!isMatch) {
+        return NextResponse.json({ success: false, error: "La contraseña actual es incorrecta." }, { status: 401 })
+      }
+
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10)
+      user.password = hashedNewPassword
+      await user.save()
+
+      return NextResponse.json({ success: true, message: "Contraseña actualizada con éxito." })
+    } catch (error) {
+      return NextResponse.json({ success: false, error: "Error al cambiar la contraseña." }, { status: 500 })
+    }
   }
 
   return NextResponse.json({ success: false, error: "Acción no válida" }, { status: 404 })

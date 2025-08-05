@@ -61,7 +61,7 @@ export function RecurringList({ initialRecurring }: { initialRecurring: any[] })
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Tus reglas recurrentes</CardTitle>
+        <CardTitle>Tus Reglas Recurrentes</CardTitle>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleGenerate} disabled={isGenerating}>
             <Zap className="h-4 w-4 mr-2" />
@@ -71,7 +71,7 @@ export function RecurringList({ initialRecurring }: { initialRecurring: any[] })
             <DialogTrigger asChild>
               <Button onClick={() => setSelectedRecurring(null)}>
                 <PlusCircle className="h-4 w-4 mr-2" />
-                Añadir regla
+                Añadir Regla
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -86,7 +86,10 @@ export function RecurringList({ initialRecurring }: { initialRecurring: any[] })
       <CardContent>
         <div className="divide-y">
           {recurringList.map((recurring) => (
-            <div key={recurring._id} className="flex items-center justify-between py-4">
+            <div
+              key={recurring._id}
+              className="flex flex-col items-start gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
+            >
               <div className="flex items-center gap-3">
                 <div
                   className={`p-2 rounded-full ${recurring.type === "income" ? "bg-success/20 text-success" : "bg-danger/20 text-danger"}`}
@@ -99,13 +102,13 @@ export function RecurringList({ initialRecurring }: { initialRecurring: any[] })
                 </div>
                 <div>
                   <p className="font-medium">{recurring.description}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground hidden md:block">
                     Próxima: {new Date(recurring.nextDate).toLocaleDateString()} en{" "}
                     <span className="font-semibold">{recurring.account.name}</span>
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="self-end sm:self-center flex items-center gap-2">
                 <Badge variant="secondary" className="capitalize">
                   {recurring.frequency}
                 </Badge>

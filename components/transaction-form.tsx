@@ -24,6 +24,7 @@ import type { ITransaction } from "@/models/Transaction"
 interface TransactionFormProps {
   onSuccess: (transaction: ITransaction) => void
   transaction: ITransaction | null
+  defaultType?: "income" | "expense"
 }
 
 const formSchema = z.object({
@@ -31,11 +32,12 @@ const formSchema = z.object({
   amount: z.coerce.number().positive("El importe debe ser positivo."),
   description: z.string().min(2, "La descripción es muy corta.").max(100),
   date: z.date({ required_error: "La fecha es obligatoria." }),
+  nature: z.enum(["Puntual", "Recurrente", "Extraordinaria"]), // CAMPO AÑADIDO
   categoryId: z.string({ required_error: "La categoría es obligatoria." }),
   accountId: z.string({ required_error: "La cuenta es obligatoria." }),
 })
 
-export function TransactionForm({ onSuccess, transaction }: TransactionFormProps) {
+export function TransactionForm({ onSuccess, transaction, defaultType = "expense" }: TransactionFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
@@ -60,6 +62,7 @@ export function TransactionForm({ onSuccess, transaction }: TransactionFormProps
       amount: 0,
       description: "",
       date: new Date(),
+      nature: "Puntual", // VALOR POR DEFECTO
     },
   })
 
@@ -70,20 +73,22 @@ export function TransactionForm({ onSuccess, transaction }: TransactionFormProps
         amount: transaction.amount,
         description: transaction.description,
         date: new Date(transaction.date),
+        nature: transaction.nature || "Puntual",
         categoryId: (transaction.category as any)?._id || transaction.category,
         accountId: (transaction.account as any)?._id || transaction.account,
       })
     } else {
       form.reset({
-        type: "expense",
+        type: defaultType, // Use the prop here
         amount: 0,
         description: "",
         date: new Date(),
+        nature: "Puntual",
         categoryId: undefined,
         accountId: undefined,
       })
     }
-  }, [transaction, form])
+  }, [transaction, defaultType, form])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
@@ -120,7 +125,7 @@ export function TransactionForm({ onSuccess, transaction }: TransactionFormProps
     } catch (error) {
       toast({
         title: "Error",
-        description: `No se pudo ${transaction ? "actualizar" : "añadir"} la transacción. Inténtalo de nuevo.`,
+        description: `No se pudo ${transaction ? "añadir" : "actualizar"} la transacción. Inténtalo de nuevo.`,
         variant: "destructive",
       })
       console.error(error)
@@ -230,7 +235,7 @@ export function TransactionForm({ onSuccess, transaction }: TransactionFormProps
           )}
         />
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-3 gap-8">
           <FormField
             control={form.control}
             name="categoryId"
@@ -240,7 +245,7 @@ export function TransactionForm({ onSuccess, transaction }: TransactionFormProps
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una categoría" />
+                      <SelectValue placeholder="Selecciona" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -266,7 +271,7 @@ export function TransactionForm({ onSuccess, transaction }: TransactionFormProps
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una cuenta" />
+                      <SelectValue placeholder="Selecciona" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -275,6 +280,28 @@ export function TransactionForm({ onSuccess, transaction }: TransactionFormProps
                         {account.name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="nature"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Naturaleza</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Puntual">Puntual</SelectItem>
+                    <SelectItem value="Recurrente">Recurrente</SelectItem>
+                    <SelectItem value="Extraordinaria">Extraordinaria</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

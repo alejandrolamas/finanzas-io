@@ -31,27 +31,37 @@ export function CategoryList({ initialCategories }: { initialCategories: ICatego
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de que quieres eliminar esta categoría?")) return
+    if (
+      !confirm(
+        "¿Estás seguro de que quieres eliminar esta categoría? Solo se puede eliminar si no tiene transacciones asociadas.",
+      )
+    )
+      return
+    if (!confirm("Esta acción es irreversible. ¿Confirmas la eliminación?")) return
 
     try {
       const res = await fetch(`/api/categories/${id}`, { method: "DELETE" })
-      if (!res.ok) throw new Error("Error al eliminar")
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || "Error al eliminar")
+      }
       setCategories(categories.filter((c) => c._id !== id))
       toast({ title: "Categoría eliminada", description: "La categoría ha sido eliminada con éxito." })
     } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar la categoría." })
+      const errorMessage = error instanceof Error ? error.message : "No se pudo eliminar la categoría."
+      toast({ variant: "destructive", title: "Error", description: errorMessage })
     }
   }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Tus categorías</CardTitle>
+        <CardTitle>Tus Categorías</CardTitle>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditingCategory(null)}>
               <PlusCircle className="h-4 w-4 mr-2" />
-              Añadir categoría
+              Añadir Categoría
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -65,17 +75,20 @@ export function CategoryList({ initialCategories }: { initialCategories: ICatego
       <CardContent>
         <div className="divide-y">
           {categories.map((category) => (
-            <div key={category._id} className="flex items-center justify-between py-3">
+            <div
+              key={category._id}
+              className="flex flex-col items-start gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
               <div className="flex items-center gap-3">
                 <div className="h-4 w-4 rounded-full" style={{ backgroundColor: category.color || "#A1A1AA" }} />
                 <div>
                   <p className="font-medium">{category.name}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground hidden sm:block">
                     {category.budget && category.budget > 0 ? `Presupuesto: €${category.budget}` : ""}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full justify-between sm:w-auto">
                 <Badge variant={category.type === "expense" ? "outline" : "secondary"}>
                   {category.type === "expense" ? (
                     <TrendingDown className="h-3 w-3 mr-1 text-danger" />

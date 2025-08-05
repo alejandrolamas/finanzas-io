@@ -1,11 +1,13 @@
 "use server"
 
-import { generateText } from "ai"
+import { generateText, generateObject } from "ai"
 import { openai } from "@ai-sdk/openai"
 import dbConnect from "@/lib/dbConnect"
 import Transaction from "@/models/Transaction"
 import mongoose from "mongoose"
 import { requireAuth } from "@/lib/auth"
+import { z } from "zod"
+import type { ITransaction } from "@/models/Transaction"
 
 // Función para generar la frase motivadora
 export async function generateMotivationalPhrase() {
@@ -57,4 +59,44 @@ export async function generateMotivationalPhrase() {
 //   })
 //
 //   return textStream
-// }
+//
+
+// NUEVA FUNCIÓN para generar previsiones financieras
+export async function generateFinancialForecast(transactions: ITransaction[]) {
+  try {
+    // Simplificamos las transacciones para el prompt
+    const transactionSummary = transactions
+      .slice(0, 100) // Limitar a las últimas 100 transacciones para no exceder el límite de tokens
+      .map((t) => `(${t.type}, ${t.amount}€, ${new Date(t.date).toISOString().split("T")[0]})`)
+      .join("\n")
+
+    const forecastSchema = z.object({
+      nextMonth: z.object({
+        income: z.number().describe("Previsión total de ingresos para el próximo mes."),
+        expenses: z.number().describe("Previsión total de gastos para el próximo mes."),
+        savings: z.number().describe("Previsión de ahorro (ingresos - gastos) para el próximo mes."),
+      }),
+      yearlyForecast: z
+        .array(
+          z.object({
+            month: z.string().describe("Mes en formato 'YYYY-MM'."),
+            income: z.number().describe("Previsión de ingresos para este mes."),
+            expenses: z.number().describe("Previsión de gastos para este mes."),
+          }),
+        )
+        .length(12)
+        .describe("Una previsión mes a mes para los próximos 12 meses."),
+    })
+
+    const { object: forecast } = await generateObject({
+      model: openai("gpt-4o-mini"),
+      schema: forecastSchema,
+      prompt: `Basado en el siguiente historial de transacciones (tipo, importe, fecha):\n${transactionSummary}\n\nCalcula una previsión financiera. Sé realista y basa tus cálculos en los patrones de ingresos y gastos observados. Considera la estacionalidad si es posible.`,
+    })
+
+    return forecast
+  } catch (error) {
+    console.error("Error generating financial forecast:", error)
+    throw new Error("No se pudo generar la previsión.")
+  }
+}

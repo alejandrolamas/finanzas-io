@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Edit, HandCoins } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Trash2, Edit, HandCoins, Info } from "lucide-react"
 import { DebtForm } from "./debt-form"
 import type { IDebt } from "@/models/Debt"
 import { useToast } from "./ui/use-toast"
@@ -14,10 +14,30 @@ import { Badge } from "./ui/badge"
 import { Progress } from "./ui/progress"
 import { PaymentForm } from "./payment-form"
 
+function DebtDetails({ debt }: { debt: IDebt }) {
+  return (
+    <div className="space-y-2">
+      <p>
+        <strong>Descripción:</strong> {debt.description || "N/A"}
+      </p>
+      <p>
+        <strong>Vencimiento:</strong> {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : "N/A"}
+      </p>
+      <p>
+        <strong>Estado:</strong> {debt.status}
+      </p>
+      <p>
+        <strong>Tipo:</strong> {debt.type}
+      </p>
+    </div>
+  )
+}
+
 export function DebtList({ initialDebts }: { initialDebts: IDebt[] }) {
   const [debts, setDebts] = useState<IDebt[]>(initialDebts)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isPaymentOpen, setIsPaymentOpen] = useState(false)
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [selectedDebt, setSelectedDebt] = useState<IDebt | null>(null)
   const router = useRouter()
   const { toast } = useToast()
@@ -60,7 +80,7 @@ export function DebtList({ initialDebts }: { initialDebts: IDebt[] }) {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{selectedDebt ? "Editar Deuda" : "Nueva Deuda"}</DialogTitle>
+              <DialogTitle>{selectedDebt && !isPaymentOpen ? "Editar Deuda" : "Nueva Deuda"}</DialogTitle>
             </DialogHeader>
             <DebtForm onSuccess={handleSuccess} debt={selectedDebt} />
           </DialogContent>
@@ -72,27 +92,36 @@ export function DebtList({ initialDebts }: { initialDebts: IDebt[] }) {
             const progress = (debt.paidAmount / debt.totalAmount) * 100
             return (
               <div key={debt._id} className="p-4 border rounded-lg">
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-grow">
                     <Badge variant={debt.type === "Debo" ? "destructive" : "default"}>{debt.status}</Badge>
                     <p className="font-bold text-lg mt-1">{debt.person}</p>
-                    <p className="text-sm text-muted-foreground">{debt.description}</p>
+                    <p className="text-sm text-muted-foreground hidden md:block">{debt.description}</p>
                   </div>
                   <div className="text-right">
                     <p className={`text-xl font-bold ${debt.type === "Debo" ? "text-danger" : "text-success"}`}>
                       {debt.type === "Debo" ? "-" : "+"}€{debt.totalAmount.toFixed(2)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground hidden md:block">
                       Vence: {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : "N/A"}
                     </p>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="-mt-2 -mr-2 flex-shrink-0">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedDebt(debt)
+                          setIsDetailsOpen(true)
+                        }}
+                        className="md:hidden"
+                      >
+                        <Info className="mr-2 h-4 w-4" /> Detalles
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => {
                           setSelectedDebt(debt)
@@ -135,6 +164,14 @@ export function DebtList({ initialDebts }: { initialDebts: IDebt[] }) {
               <DialogTitle>Añadir pago a deuda</DialogTitle>
             </DialogHeader>
             {selectedDebt && <PaymentForm onSuccess={handleSuccess} debt={selectedDebt} />}
+          </DialogContent>
+        </Dialog>
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Detalles de la deuda</DialogTitle>
+            </DialogHeader>
+            {selectedDebt && <DebtDetails debt={selectedDebt} />}
           </DialogContent>
         </Dialog>
       </CardContent>

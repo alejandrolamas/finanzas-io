@@ -45,12 +45,12 @@ export function AccountList({ initialAccounts }: { initialAccounts: IAccount[] }
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Tus cuentas</CardTitle>
+        <CardTitle>Tus Cuentas</CardTitle>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditingAccount(null)}>
               <PlusCircle className="h-4 w-4 mr-2" />
-              Añadir cuenta
+              Añadir Cuenta
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -64,17 +64,20 @@ export function AccountList({ initialAccounts }: { initialAccounts: IAccount[] }
       <CardContent>
         <div className="divide-y">
           {accounts.map((account) => (
-            <div key={account._id} className="flex items-center justify-between py-3">
+            <div
+              key={account._id}
+              className="flex flex-col items-start gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
               <div className="flex items-center gap-3">
                 <div className="h-4 w-4 rounded-full" style={{ backgroundColor: account.color || "#A1A1AA" }} />
                 <div>
                   <p className="font-medium">{account.name}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground hidden md:block">
                     {account.type} - {account.bank}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full justify-between sm:w-auto">
                 <p className="font-semibold">€{account.initialBalance.toFixed(2)}</p>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

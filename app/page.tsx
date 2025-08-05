@@ -4,12 +4,13 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowDownRight, Banknote, Landmark, PlusCircle, Scale, TrendingUp } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Progress } from "@/components/ui/progress"
-import Link from "next/link"
 import { MotivationalPhrase } from "@/components/motivational-phrase"
 import type { ChartConfig } from "@/components/ui/chart"
+import { useRouter } from "next/navigation"
+import { TransactionDialog } from "@/components/transaction-dialog"
 
 const barChartConfig = {
   ingresos: {
@@ -27,6 +28,7 @@ export default function HomePage() {
   const [stats, setStats] = useState<any>(null)
   const [budgets, setBudgets] = useState<any>(null)
   const loading = !summary || !stats || !budgets
+  const router = useRouter()
 
   useEffect(() => {
     async function fetchData() {
@@ -49,7 +51,7 @@ export default function HomePage() {
     fetchData()
   }, [])
 
-  if (loading) return <div>Cargando dashboard...</div>
+  if (loading) return <div className="text-center text-muted-foreground">Cargando dashboard...</div>
 
   const summaryCards = [
     { title: "Saldo Total", value: `€${summary.totalBalance.toFixed(2)}`, icon: Landmark },
@@ -66,22 +68,22 @@ export default function HomePage() {
           <p className="text-muted-foreground">Resumen de tu actividad financiera.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <Link href="/transactions/add">
+          <TransactionDialog defaultType="expense" onSuccess={() => router.refresh()}>
+            <Button variant="outline">
               <ArrowDownRight className="h-4 w-4 mr-2" />
               Añadir gasto
-            </Link>
-          </Button>
-          <Button asChild className="bg-accent hover:bg-accent-dark text-black">
-            <Link href="/transactions/add">
+            </Button>
+          </TransactionDialog>
+          <TransactionDialog defaultType="income" onSuccess={() => router.refresh()}>
+            <Button className="bg-accent hover:bg-accent-dark text-black">
               <PlusCircle className="h-4 w-4 mr-2" />
               Añadir ingreso
-            </Link>
-          </Button>
+            </Button>
+          </TransactionDialog>
         </div>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {summaryCards.map((card) => (
           <Card key={card.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -103,17 +105,28 @@ export default function HomePage() {
             <CardTitle>Ingresos vs. Gastos</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={barChartConfig} className="min-h-[300px] w-full">
-              <BarChart data={stats.monthlyBalances}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Legend />
-                <Bar dataKey="ingresos" fill="var(--color-ingresos)" radius={4} />
-                <Bar dataKey="gastos" fill="var(--color-gastos)" radius={4} />
-              </BarChart>
-            </ChartContainer>
+            <div className="w-full overflow-x-auto">
+              <ChartContainer config={barChartConfig} className="h-[auto] min-w-[auto]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.monthlyBalances} margin={{ left: -20, right: 10 }}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 12 }} />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                      tickFormatter={(value) => `€${value}`}
+                      width={60}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar dataKey="ingresos" fill="var(--color-ingresos)" radius={4} />
+                    <Bar dataKey="gastos" fill="var(--color-gastos)" radius={4} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
         <Card className="md:col-span-2">

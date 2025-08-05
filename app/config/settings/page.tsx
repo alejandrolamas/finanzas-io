@@ -5,6 +5,7 @@ import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Moon, Sun } from "lucide-react"
+import { PasswordResetForm } from "@/components/password-reset-form"
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
@@ -15,6 +16,15 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-bold tracking-tight">Ajustes generales</h1>
         <p className="text-muted-foreground">Personaliza tu experiencia en la aplicación.</p>
       </header>
+      <Card>
+        <CardHeader>
+          <CardTitle>Seguridad</CardTitle>
+          <CardDescription>Cambia tu contraseña de acceso.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PasswordResetForm />
+        </CardContent>
+      </Card>
       <Card className="max-w-md">
         <CardHeader>
           <CardTitle>Apariencia</CardTitle>
