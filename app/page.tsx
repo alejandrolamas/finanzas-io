@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowDownRight, Banknote, Landmark, PlusCircle, Scale, TrendingUp } from "lucide-react"
+import { ArrowDownRight, Banknote, Landmark, PlusCircle, Scale, TrendingUp, AlertCircle } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Progress } from "@/components/ui/progress"
@@ -11,15 +11,17 @@ import { MotivationalPhrase } from "@/components/motivational-phrase"
 import type { ChartConfig } from "@/components/ui/chart"
 import { useRouter } from "next/navigation"
 import { TransactionDialog } from "@/components/transaction-dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import Link from "next/link"
 
 const barChartConfig = {
-  ingresos: {
-    label: "Ingresos",
-    color: "hsl(145 63% 45%)",
-  },
   gastos: {
     label: "Gastos",
     color: "hsl(0 84% 60%)",
+  },
+  ingresos: {
+    label: "Ingresos",
+    color: "hsl(145 63% 45%)",
   },
 } satisfies ChartConfig
 
@@ -27,37 +29,87 @@ export default function HomePage() {
   const [summary, setSummary] = useState<any>(null)
   const [stats, setStats] = useState<any>(null)
   const [budgets, setBudgets] = useState<any>(null)
-  const loading = !summary || !stats || !budgets
+  const [setupStatus, setSetupStatus] = useState<{ hasAccounts: boolean; hasCategories: boolean } | null>(null)
   const router = useRouter()
+
+  const isLoading = !summary || !stats || !budgets || !setupStatus
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [summaryRes, statsRes, budgetsRes] = await Promise.all([
+        const [summaryRes, statsRes, budgetsRes, setupRes] = await Promise.all([
           fetch("/api/dashboard/summary"),
           fetch("/api/stats/overview"),
           fetch("/api/budgets/summary"),
+          fetch("/api/setup/status"),
         ])
-        const { data: summaryData } = await summaryRes.json()
-        const { data: statsData } = await statsRes.json()
-        const { data: budgetsData } = await budgetsRes.json()
-        setSummary(summaryData)
-        setStats(statsData)
-        setBudgets(budgetsData)
+        const summaryData = await summaryRes.json()
+        const statsData = await statsRes.json()
+        const budgetsData = await budgetsRes.json()
+        const setupData = await setupRes.json()
+
+        setSummary(summaryData.data)
+        setStats(statsData.data)
+        setBudgets(budgetsData.data)
+        setSetupStatus(setupData.data)
       } catch (error) {
         console.error("Failed to fetch dashboard data", error)
+        // Set empty state on error to avoid infinite loading
+        setSummary({})
+        setStats({})
+        setBudgets([])
+        setSetupStatus({ hasAccounts: false, hasCategories: false })
       }
     }
     fetchData()
   }, [])
 
-  if (loading) return <div className="text-center text-muted-foreground">Cargando dashboard...</div>
+  if (isLoading) return <div className="text-center text-muted-foreground">Cargando dashboard...</div>
+
+  const isSetupComplete = setupStatus?.hasAccounts && setupStatus?.hasCategories
+
+  if (!isSetupComplete) {
+    return (
+      <div className="flex flex-col gap-4 items-center justify-center h-full pt-10">
+        <h1 className="text-3xl font-bold tracking-tight text-center">Bienvenido a Finanzas.io</h1>
+        <p className="text-muted-foreground text-center">
+          Completa los siguientes pasos para empezar a gestionar tus finanzas.
+        </p>
+        <div className="w-full max-w-lg space-y-4 mt-6">
+          {!setupStatus?.hasAccounts && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Crea tu primera cuenta</AlertTitle>
+              <AlertDescription>
+                Necesitas al menos una cuenta (ej: "Banco", "Efectivo") para registrar tus transacciones.
+                <Link href="/config/accounts" className="font-bold text-primary hover:underline ml-2">
+                  Añadir cuenta
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+          {!setupStatus?.hasCategories && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Crea tu primera categoría</AlertTitle>
+              <AlertDescription>
+                Necesitas al menos una categoría (ej: "Comida", "Transporte") para clasificar tus gastos.
+                <Link href="/config/categories" className="font-bold text-primary hover:underline ml-2">
+                  Añadir categoría
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const summaryCards = [
-    { title: "Saldo Total", value: `€${summary.totalBalance.toFixed(2)}`, icon: Landmark },
-    { title: "Ahorros", value: `€${summary.totalSavings.toFixed(2)}`, icon: Banknote },
-    { title: "Deudas", value: `€${summary.totalDebts.toFixed(2)}`, icon: Scale },
-    { title: "Balance Mensual", value: `€${summary.monthlyBalance.toFixed(2)}`, icon: TrendingUp },
+    { title: "Saldo Total", value: `€${summary.totalBalance?.toFixed(2) ?? 0}`, icon: Landmark },
+    { title: "Ahorros", value: `€${summary.totalSavings?.toFixed(2) ?? 0}`, icon: Banknote },
+    { title: "Deudas", value: `€${summary.totalDebts?.toFixed(2) ?? 0}`, icon: Scale },
+    { title: "Balance Mensual", value: `€${summary.monthlyBalance?.toFixed(2) ?? 0}`, icon: TrendingUp },
   ]
 
   return (

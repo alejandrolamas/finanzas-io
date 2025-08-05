@@ -42,7 +42,7 @@ const speedDialItems = [
   { action: "logout", label: "Cerrar sesión", icon: LogOut },
 ]
 
-export function MobileNav() {
+export function MobileNav({ isSetupComplete }: { isSetupComplete: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
   const { toast } = useToast()
@@ -84,64 +84,76 @@ export function MobileNav() {
       <div className="fixed bottom-20 right-4 z-50 flex flex-col-reverse items-end gap-3 md:hidden">
         <AnimatePresence>
           {isMenuOpen &&
-            speedDialItems.map((item, index) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 50, scale: 0.5 }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                  scale: 1,
-                  transition: { delay: index * 0.05, type: "spring", stiffness: 300, damping: 20 },
-                }}
-                exit={{
-                  opacity: 0,
-                  y: 50,
-                  scale: 0.5,
-                  transition: { duration: 0.15 },
-                }}
-                className="flex items-center gap-3"
-              >
-                <span className="bg-card text-card-foreground rounded-md px-3 py-1.5 text-sm shadow-lg">
-                  {item.label}
-                </span>
-                <button
-                  onClick={() => handleSpeedDialClick(item)}
-                  className="bg-accent text-accent-foreground rounded-full w-12 h-12 flex items-center justify-center shadow-lg"
+            speedDialItems.map((item, index) => {
+              const isAllowed = item.href?.startsWith("/config/") || item.action === "logout"
+              const isDisabled = !isSetupComplete && !isAllowed
+
+              return (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, y: 50, scale: 0.5 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    transition: { delay: index * 0.05, type: "spring", stiffness: 300, damping: 20 },
+                  }}
+                  exit={{
+                    opacity: 0,
+                    y: 50,
+                    scale: 0.5,
+                    transition: { duration: 0.15 },
+                  }}
+                  className="flex items-center gap-3"
                 >
-                  <item.icon className="h-6 w-6" />
-                </button>
-              </motion.div>
-            ))}
+                  <span
+                    className={cn(
+                      "bg-card text-card-foreground rounded-md px-3 py-1.5 text-sm shadow-lg",
+                      isDisabled && "opacity-50",
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                  <button
+                    onClick={() => !isDisabled && handleSpeedDialClick(item)}
+                    className={cn(
+                      "bg-accent text-accent-foreground rounded-full w-12 h-12 flex items-center justify-center shadow-lg",
+                      isDisabled && "opacity-50 cursor-not-allowed",
+                    )}
+                    disabled={isDisabled}
+                  >
+                    <item.icon className="h-6 w-6" />
+                  </button>
+                </motion.div>
+              )
+            })}
         </AnimatePresence>
       </div>
 
       {/* Bottom Navigation Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t h-16 flex justify-around items-center z-50">
         {navItems.map((item) => {
-          const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href)
-          if (item.isCentral) {
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="flex-shrink-0 -mt-8 bg-accent text-black rounded-full w-16 h-16 flex items-center justify-center shadow-lg"
-              >
-                <item.icon className="h-8 w-8" />
-              </Link>
-            )
-          }
+          const isDisabled = item.isCentral ? !isSetupComplete : !isSetupComplete && item.href !== "/"
+          const isActive = !isDisabled && (item.href === "/" ? pathname === item.href : pathname.startsWith(item.href))
+
           return (
             <Link
               key={item.label}
-              href={item.href}
+              href={isDisabled ? "#" : item.href}
+              aria-disabled={isDisabled}
+              onClick={(e) => {
+                if (isDisabled) e.preventDefault()
+              }}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full text-muted-foreground",
-                isActive && "text-accent",
+                item.isCentral
+                  ? "flex-shrink-0 -mt-8 bg-accent text-black rounded-full w-16 h-16 flex items-center justify-center shadow-lg"
+                  : "flex flex-col items-center justify-center w-full h-full text-muted-foreground",
+                isActive && !item.isCentral && "text-accent",
+                isDisabled && "opacity-50 cursor-not-allowed",
               )}
             >
-              <item.icon className="h-6 w-6" />
-              <span className="text-xs">{item.label}</span>
+              <item.icon className={item.isCentral ? "h-8 w-8" : "h-6 w-6"} />
+              {!item.isCentral && <span className="text-xs">{item.label}</span>}
             </Link>
           )
         })}
