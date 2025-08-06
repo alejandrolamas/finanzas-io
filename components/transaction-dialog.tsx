@@ -8,28 +8,28 @@ import { TransactionForm } from "./transaction-form"
 import type { ITransaction } from "@/models/Transaction"
 
 interface TransactionDialogProps {
-  children: React.ReactNode
-  defaultType?: "income" | "expense"
-  onSuccess: (transaction: ITransaction) => void
+children: React.ReactNode
+defaultType?: "income" | "expense"
+onSuccess: (transaction: ITransaction) => void
 }
 
 export function TransactionDialog({ children, defaultType, onSuccess }: TransactionDialogProps) {
-  const [isOpen, setIsOpen] = useState(false)
+const [isOpen, setIsOpen] = useState(false)
 
-  const handleSuccess = (transaction: ITransaction) => {
-    onSuccess(transaction)
-    setIsOpen(false)
-  }
+const handleSuccess = (transaction: ITransaction) => {
+  onSuccess(transaction)
+  setIsOpen(false)
+}
 
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nueva Transacción</DialogTitle>
-        </DialogHeader>
-        <TransactionForm onSuccess={handleSuccess} transaction={null} defaultType={defaultType} />
-      </DialogContent>
-    </Dialog>
-  )
+return (
+  <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <DialogTrigger asChild>{children}</DialogTrigger>
+    <DialogContent className="max-h-[90dvh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Nueva Transacción</DialogTitle>
+      </DialogHeader>
+      <TransactionForm onSuccess={handleSuccess} transaction={null} defaultType={defaultType} />
+    </DialogContent>
+  </Dialog>
+)
 }

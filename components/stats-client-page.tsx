@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
@@ -23,7 +23,7 @@ import {
   Line,
 } from "recharts"
 import { Badge } from "@/components/ui/badge"
-import { Download, BrainCircuit, Loader2 } from "lucide-react"
+import { Download, BrainCircuit, Loader2, Wallet, Landmark, ArrowUpCircle, ArrowDownCircle, CalendarClock } from 'lucide-react'
 import { format } from "date-fns"
 import type { DateRange } from "react-day-picker"
 import { subDays } from "date-fns"
@@ -33,13 +33,32 @@ import type { ICategory } from "@/models/Category"
 import jsPDF from "jspdf"
 import { StatsPDFReport } from "./stats-pdf-report"
 import html2canvas from "html2canvas"
+import { SummaryCard } from "./summary-card"
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AF19FF", "#FF1943", "#19D4FF"]
+
+interface SummaryData {
+  totalBalance: number
+  accountBalances: { _id: string; name: string; balance: number }[]
+  recurringTotals: {
+    monthlyIncome: number
+    monthlyExpense: number
+    annualIncome: number
+    annualExpense: number
+  }
+}
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(value)
+}
 
 export function StatsClientPage({
   initialTransactions,
   categories,
-}: { initialTransactions: ITransaction[]; categories: ICategory[] }) {
+}: {
+  initialTransactions: ITransaction[]
+  categories: ICategory[]
+}) {
   const [date, setDate] = useState<DateRange | undefined>({
     from: subDays(new Date(), 29),
     to: new Date(),
@@ -49,12 +68,32 @@ export function StatsClientPage({
   const [forecast, setForecast] = useState<any>(null)
   const [isForecastLoading, setIsForecastLoading] = useState(false)
   const [isPdfLoading, setIsPdfLoading] = useState(false)
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
+  const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+
+  useEffect(() => {
+    async function fetchSummaryData() {
+      try {
+        setIsLoadingSummary(true)
+        const response = await fetch("/api/stats/summary-cards")
+        if (!response.ok) throw new Error("Failed to fetch summary")
+        const { data } = await response.json()
+        setSummaryData(data)
+      } catch (error) {
+        console.error("Failed to fetch summary data", error)
+      } finally {
+        setIsLoadingSummary(false)
+      }
+    }
+    fetchSummaryData()
+  }, [])
 
   const filteredTransactions = useMemo(() => {
     if (!initialTransactions) return []
     return initialTransactions.filter((t) => {
       const transactionDate = new Date(t.date)
-      const isInDateRange = date?.from && date?.to ? transactionDate >= date.from && transactionDate <= date.to : true
+      const isInDateRange =
+        date?.from && date?.to ? transactionDate >= date.from && transactionDate <= date.to : true
       const isCorrectType = type === "all" || t.type === type
       const isInCategory =
         selectedCategories.length === 0 || !t.category || selectedCategories.includes((t.category as any)._id)
@@ -106,14 +145,11 @@ export function StatsClientPage({
       setIsPdfLoading(false)
       return
     }
-
-    // Use the parent of the input for style modifications to avoid layout shifts
     const parent = input.parentElement
     if (!parent) {
       setIsPdfLoading(false)
       return
     }
-
     const originalParentStyles = {
       position: parent.style.position,
       left: parent.style.left,
@@ -122,79 +158,126 @@ export function StatsClientPage({
       width: parent.style.width,
       height: parent.style.height,
     }
-
-    // Temporarily adjust styles for an accurate, full-height capture
     parent.style.position = "absolute"
     parent.style.left = "0"
     parent.style.top = "0"
     parent.style.overflow = "visible"
-    parent.style.width = "800px" // A standard width for consistent rendering
+    parent.style.width = "800px"
     parent.style.height = "auto"
-
     html2canvas(input, {
-      scale: 2, // Higher scale for better quality
+      scale: 2,
       useCORS: true,
-      windowWidth: 800, // Match the width we set
+      windowWidth: 800,
       scrollY: 0,
     })
       .then((canvas) => {
-        // Restore original styles immediately after capture
-        parent.style.position = originalParentStyles.position
-        parent.style.left = originalParentStyles.left
-        parent.style.top = originalParentStyles.top
-        parent.style.overflow = originalParentStyles.overflow
-        parent.style.width = originalParentStyles.width
-        parent.style.height = originalParentStyles.height
-
+        Object.assign(parent.style, originalParentStyles)
         const imgData = canvas.toDataURL("image/png")
         const pdf = new jsPDF("p", "mm", "a4")
-
         const pdfWidth = pdf.internal.pageSize.getWidth()
         const pdfHeight = pdf.internal.pageSize.getHeight()
-
-        // Calculate the height of the image in the PDF to maintain aspect ratio
         const imgHeight = (canvas.height * pdfWidth) / canvas.width
         let heightLeft = imgHeight
         let position = 0
         const topMargin = 15
-
-        // Add the first page
         pdf.addImage(imgData, "PNG", 0, topMargin, pdfWidth, imgHeight)
         heightLeft -= pdfHeight - topMargin
-
-        // Add new pages if content overflows
         while (heightLeft > 0) {
           position = heightLeft - imgHeight + topMargin
           pdf.addPage()
           pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight)
           heightLeft -= pdfHeight
         }
-
         pdf.save(`reporte-estadisticas-${format(new Date(), "yyyy-MM-dd")}.pdf`)
         setIsPdfLoading(false)
       })
       .catch((error) => {
         console.error("Error generating PDF:", error)
-        // Restore styles even if there's an error
-        parent.style.position = originalParentStyles.position
-        parent.style.left = originalParentStyles.left
-        parent.style.top = originalParentStyles.top
-        parent.style.overflow = originalParentStyles.overflow
-        parent.style.width = originalParentStyles.width
-        parent.style.height = originalParentStyles.height
+        Object.assign(parent.style, originalParentStyles)
         setIsPdfLoading(false)
       })
   }
+
+  const summaryCards = useMemo(() => {
+    if (!summaryData) return []
+    return [
+      {
+        title: "Saldo Total",
+        value: formatCurrency(summaryData.totalBalance),
+        icon: Wallet,
+      },
+      ...summaryData.accountBalances.map((acc) => ({
+        title: `Saldo ${acc.name}`,
+        value: formatCurrency(acc.balance),
+        icon: Landmark,
+      })),
+      {
+        title: "Ingresos Recurrentes (Mes)",
+        value: formatCurrency(summaryData.recurringTotals.monthlyIncome),
+        icon: ArrowUpCircle,
+        colorClass: "text-green-500",
+      },
+      {
+        title: "Gastos Recurrentes (Mes)",
+        value: formatCurrency(summaryData.recurringTotals.monthlyExpense),
+        icon: ArrowDownCircle,
+        colorClass: "text-red-500",
+      },
+      {
+        title: "Ingresos Recurrentes (Año)",
+        value: formatCurrency(summaryData.recurringTotals.annualIncome),
+        icon: CalendarClock,
+        colorClass: "text-green-500",
+      },
+      {
+        title: "Gastos Recurrentes (Año)",
+        value: formatCurrency(summaryData.recurringTotals.annualExpense),
+        icon: CalendarClock,
+        colorClass: "text-red-500",
+      },
+    ]
+  }, [summaryData])
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div />
         <Button onClick={handleExportPdf} disabled={isPdfLoading}>
-          {isPdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          {isPdfLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
           Exportar a PDF
         </Button>
       </div>
+
+      {/* Resumen General */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Resumen General</CardTitle>
+          <CardDescription>Una vista rápida de tu situación financiera actual y tus flujos fijos.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {isLoadingSummary
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <SummaryCard key={i} isLoading={true} title="" value="" icon={Wallet} />
+                ))
+              : summaryCards.map((card) => (
+                  <SummaryCard
+                    key={card.title}
+                    isLoading={false}
+                    title={card.title}
+                    value={card.value}
+                    icon={card.icon}
+                    colorClass={card.colorClass}
+                  />
+                ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Filtros */}
       <Card>
         <CardHeader>
@@ -226,28 +309,19 @@ export function StatsClientPage({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Gastos por Categoría</CardTitle>
+            <CardTitle>Gastos por categoría</CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px] flex items-center justify-center">
+          <CardContent className="h-[600px] flex items-center justify-center">
             {expensesByCategory.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={expensesByCategory}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={120}
-                    label={false}
-                    labelLine={false}
-                  >
+                  <Pie data={expensesByCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={180} label={false} labelLine={false}>
                     {expensesByCategory.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip formatter={(value: number) => `€${value.toFixed(2)}`} />
-                  <Legend verticalAlign="bottom" wrapperStyle={{ lineHeight: "40px" }} />
+                  <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}€`} />
+                  <Legend verticalAlign="bottom" wrapperStyle={{ lineHeight: "20px" }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -259,19 +333,17 @@ export function StatsClientPage({
           <CardHeader>
             <CardTitle>Ingresos vs Gastos</CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px] flex items-center justify-center">
+          <CardContent className="h-[500px] flex items-center justify-center">
             {incomeVsExpense.income > 0 || incomeVsExpense.expense > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={[{ name: "Balance", income: incomeVsExpense.income, expense: incomeVsExpense.expense }]}
-                >
+                <BarChart data={[{ name: "Balance", income: incomeVsExpense.income, expense: incomeVsExpense.expense }]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(value) => `€${value}`} />
-                  <RechartsTooltip formatter={(value: number) => `€${value.toFixed(2)}`} />
+                  <YAxis tickFormatter={(value) => `${value}€`} />
+                  <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}€`} />
                   <Legend />
-                  <Bar dataKey="income" fill="#22c55e" name="Ingresos" />
                   <Bar dataKey="expense" fill="#ef4444" name="Gastos" />
+                  <Bar dataKey="income" fill="#22c55e" name="Ingresos" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -296,7 +368,7 @@ export function StatsClientPage({
               ) : (
                 <BrainCircuit className="mr-2 h-4 w-4" />
               )}
-              Generar Previsión
+              Generar previsión
             </Button>
           </CardTitle>
           <CardDescription>Previsiones generadas en base a los datos filtrados actualmente.</CardDescription>
@@ -313,7 +385,7 @@ export function StatsClientPage({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Previsión Ingresos (Próx. Mes)</CardTitle>
+                  <CardTitle className="text-base font-medium">Previsión ingresos (Próx. mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold text-green-600">€{forecast.nextMonth.income.toFixed(2)}</p>
@@ -321,7 +393,7 @@ export function StatsClientPage({
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Previsión Gastos (Próx. Mes)</CardTitle>
+                  <CardTitle className="text-base font-medium">Previsión gastos (Próx. mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold text-red-600">€{forecast.nextMonth.expenses.toFixed(2)}</p>
@@ -329,14 +401,14 @@ export function StatsClientPage({
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Ahorro Potencial (Próx. Mes)</CardTitle>
+                  <CardTitle className="text-base font-medium">Ahorro potencial (Próx. mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold">€{forecast.nextMonth.savings.toFixed(2)}</p>
                 </CardContent>
               </Card>
             </div>
-            <h3 className="font-semibold mb-2">Previsión Anual</h3>
+            <h3 className="font-semibold mb-2">Previsión anual</h3>
             <div className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={forecast.yearlyForecast}>
@@ -355,9 +427,9 @@ export function StatsClientPage({
       </Card>
 
       {/* Listado de Transacciones */}
-      <Card>
+      <Card className="max-w-[95vw]">
         <CardHeader>
-          <CardTitle>Listado de Transacciones</CardTitle>
+          <CardTitle>Listado de transacciones</CardTitle>
           <CardDescription>
             Mostrando {filteredTransactions.length} de {initialTransactions.length} transacciones totales.
           </CardDescription>
@@ -389,7 +461,9 @@ export function StatsClientPage({
                         )}
                       </TableCell>
                       <TableCell
-                        className={`text-right font-medium ${t.type === "income" ? "text-green-600" : "text-red-600"}`}
+                        className={`text-right font-medium ${
+                          t.type === "income" ? "text-green-600" : "text-red-600"
+                        }`}
                       >
                         {t.type === "income" ? "+" : "-"}€{t.amount.toFixed(2)}
                       </TableCell>
