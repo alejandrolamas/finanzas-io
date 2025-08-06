@@ -48,10 +48,6 @@ interface SummaryData {
   }
 }
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(value)
-}
-
 export function StatsClientPage({
   initialTransactions,
   categories,
@@ -203,35 +199,35 @@ export function StatsClientPage({
     return [
       {
         title: "Saldo Total",
-        value: formatCurrency(summaryData.totalBalance),
+        value: `${summaryData.totalBalance.toFixed(2)}€`,
         icon: Wallet,
       },
       ...summaryData.accountBalances.map((acc) => ({
         title: `Saldo ${acc.name}`,
-        value: formatCurrency(acc.balance),
+        value: `${acc.balance.toFixed(2)}€`,
         icon: Landmark,
       })),
       {
         title: "Ingresos Recurrentes (Mes)",
-        value: formatCurrency(summaryData.recurringTotals.monthlyIncome),
+        value: `${summaryData.recurringTotals.monthlyIncome.toFixed(2)}€`,
         icon: ArrowUpCircle,
         colorClass: "text-green-500",
       },
       {
         title: "Gastos Recurrentes (Mes)",
-        value: formatCurrency(summaryData.recurringTotals.monthlyExpense),
+        value: `${summaryData.recurringTotals.monthlyExpense.toFixed(2)}€`,
         icon: ArrowDownCircle,
         colorClass: "text-red-500",
       },
       {
         title: "Ingresos Recurrentes (Año)",
-        value: formatCurrency(summaryData.recurringTotals.annualIncome),
+        value: `${summaryData.recurringTotals.annualIncome.toFixed(2)}€`,
         icon: CalendarClock,
         colorClass: "text-green-500",
       },
       {
         title: "Gastos Recurrentes (Año)",
-        value: formatCurrency(summaryData.recurringTotals.annualExpense),
+        value: `${summaryData.recurringTotals.annualExpense.toFixed(2)}€`,
         icon: CalendarClock,
         colorClass: "text-red-500",
       },
@@ -259,7 +255,7 @@ export function StatsClientPage({
           <CardDescription>Una vista rápida de tu situación financiera actual y tus flujos fijos.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {isLoadingSummary
               ? Array.from({ length: 6 }).map((_, i) => (
                   <SummaryCard key={i} isLoading={true} title="" value="" icon={Wallet} />
@@ -309,19 +305,19 @@ export function StatsClientPage({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Gastos por categoría</CardTitle>
+            <CardTitle>Gastos por Categoría</CardTitle>
           </CardHeader>
-          <CardContent className="h-[600px] flex items-center justify-center">
+          <CardContent className="h-[350px] flex items-center justify-center">
             {expensesByCategory.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={expensesByCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={180} label={false} labelLine={false}>
+                  <Pie data={expensesByCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label={false} labelLine={false}>
                     {expensesByCategory.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}€`} />
-                  <Legend verticalAlign="bottom" wrapperStyle={{ lineHeight: "20px" }} />
+                  <Legend verticalAlign="bottom" wrapperStyle={{ lineHeight: "40px" }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -333,17 +329,17 @@ export function StatsClientPage({
           <CardHeader>
             <CardTitle>Ingresos vs Gastos</CardTitle>
           </CardHeader>
-          <CardContent className="h-[500px] flex items-center justify-center">
+          <CardContent className="h-[350px] flex items-center justify-center">
             {incomeVsExpense.income > 0 || incomeVsExpense.expense > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[{ name: "Balance", income: incomeVsExpense.income, expense: incomeVsExpense.expense }]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(value) => `${value}€`} />
+                  <YAxis tickFormatter={(value) => `€${value}`} />
                   <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}€`} />
                   <Legend />
-                  <Bar dataKey="expense" fill="#ef4444" name="Gastos" />
                   <Bar dataKey="income" fill="#22c55e" name="Ingresos" />
+                  <Bar dataKey="expense" fill="#ef4444" name="Gastos" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -368,7 +364,7 @@ export function StatsClientPage({
               ) : (
                 <BrainCircuit className="mr-2 h-4 w-4" />
               )}
-              Generar previsión
+              Generar Previsión
             </Button>
           </CardTitle>
           <CardDescription>Previsiones generadas en base a los datos filtrados actualmente.</CardDescription>
@@ -382,43 +378,53 @@ export function StatsClientPage({
         )}
         {forecast && !isForecastLoading && (
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Previsión ingresos (Próx. mes)</CardTitle>
+                  <CardTitle className="text-base font-medium">Ingresos (Próx. Mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-green-600">€{forecast.nextMonth.income.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-green-600">{forecast.nextMonth.income.toFixed(2)}€</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Previsión gastos (Próx. mes)</CardTitle>
+                  <CardTitle className="text-base font-medium">Gastos (Próx. Mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-red-600">€{forecast.nextMonth.expenses.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-red-600">{forecast.nextMonth.expenses.toFixed(2)}€</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Ahorro potencial (Próx. mes)</CardTitle>
+                  <CardTitle className="text-base font-medium">Ahorro (Próx. Mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">€{forecast.nextMonth.savings.toFixed(2)}</p>
+                  <p className="text-2xl font-bold">{forecast.nextMonth.savings.toFixed(2)}€</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-medium">Saldo Total (Próx. Mes)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-blue-600">{forecast.nextMonth.totalBalance.toFixed(2)}€</p>
                 </CardContent>
               </Card>
             </div>
-            <h3 className="font-semibold mb-2">Previsión anual</h3>
+            <h3 className="font-semibold mb-2">Previsión Anual</h3>
             <div className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={forecast.yearlyForecast}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(value) => `€${value}`} />
-                  <RechartsTooltip formatter={(value: number) => `€${value.toFixed(2)}`} />
+                  <YAxis tickFormatter={(value) => `${value}€`} />
+                  <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}€`} />
                   <Legend />
                   <Line type="monotone" dataKey="income" stroke="#22c55e" name="Ingresos" />
                   <Line type="monotone" dataKey="expenses" stroke="#ef4444" name="Gastos" />
+                  <Line type="monotone" dataKey="savings" stroke="#f97316" name="Ahorro" />
+                  <Line type="monotone" dataKey="totalBalance" stroke="#3b82f6" name="Saldo Total" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -427,9 +433,9 @@ export function StatsClientPage({
       </Card>
 
       {/* Listado de Transacciones */}
-      <Card className="max-w-[95vw]">
+      <Card>
         <CardHeader>
-          <CardTitle>Listado de transacciones</CardTitle>
+          <CardTitle>Listado de Transacciones</CardTitle>
           <CardDescription>
             Mostrando {filteredTransactions.length} de {initialTransactions.length} transacciones totales.
           </CardDescription>
@@ -465,7 +471,7 @@ export function StatsClientPage({
                           t.type === "income" ? "text-green-600" : "text-red-600"
                         }`}
                       >
-                        {t.type === "income" ? "+" : "-"}€{t.amount.toFixed(2)}
+                        {t.type === "income" ? "+" : "-"}{t.amount.toFixed(2)}€
                       </TableCell>
                     </TableRow>
                   ))
