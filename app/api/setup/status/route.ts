@@ -14,6 +14,7 @@ export async function GET() {
     const hasCategories = categories.length > 0
 
     return NextResponse.json({
+      success: true,
       data: {
         hasAccounts,
         hasCategories,
@@ -21,9 +22,9 @@ export async function GET() {
     })
   } catch (error) {
     if (error instanceof Error && error.message.includes("Authentication required")) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
     }
     console.error("Error fetching setup status:", error)
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Internal Server Error" }, { status: 500 })
   }
 }

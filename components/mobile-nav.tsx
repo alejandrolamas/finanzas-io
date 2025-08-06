@@ -2,23 +2,9 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import {
-  LayoutDashboard,
-  ArrowLeftRight,
-  CreditCard,
-  Goal,
-  PlusCircle,
-  Plus,
-  TrendingUp,
-  Repeat,
-  Landmark,
-  Wallet,
-  Settings,
-  LogOut,
-  ArrowRightLeft,
-} from "lucide-react"
+import { LayoutDashboard, ArrowLeftRight, CreditCard, Goal, PlusCircle, Plus, TrendingUp, Repeat, Landmark, Wallet, Settings, LogOut, ArrowRightLeft } from 'lucide-react'
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { AnimatePresence, motion } from "framer-motion"
 
@@ -42,11 +28,24 @@ const speedDialItems = [
   { action: "logout", label: "Cerrar sesión", icon: LogOut },
 ]
 
-export function MobileNav({ isSetupComplete }: { isSetupComplete: boolean }) {
+export function MobileNav({ initialIsSetupComplete }: { initialIsSetupComplete: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
   const { toast } = useToast()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isSetupComplete, setIsSetupComplete] = useState(initialIsSetupComplete)
+
+  useEffect(() => {
+    // Client-side check to ensure setup status is up-to-date
+    fetch("/api/setup/status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.data) {
+          const { hasAccounts, hasCategories } = data.data
+          setIsSetupComplete(hasAccounts && hasCategories)
+        }
+      })
+  }, [pathname]) // Re-check on navigation
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" })

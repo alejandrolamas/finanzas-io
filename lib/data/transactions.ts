@@ -1,4 +1,3 @@
-// lib/data/transactions.ts
 import "server-only"
 import dbConnect from "@/lib/dbConnect"
 import Transaction from "@/models/Transaction"
@@ -14,7 +13,7 @@ export async function getTransactions() {
     const transactions = await Transaction.find({ userId })
       .populate("category", "name color")
       .populate("account", "name")
-      .sort({ date: -1 })
+      .sort({ createdAt: -1 }) // Order by creation date, newest first
     return JSON.parse(JSON.stringify(transactions))
   } catch (error) {
     console.error("Error fetching transactions:", error)

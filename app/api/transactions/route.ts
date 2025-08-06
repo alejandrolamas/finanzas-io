@@ -1,4 +1,3 @@
-// app/api/transactions/route.ts
 import { NextResponse } from "next/server"
 import dbConnect from "@/lib/dbConnect"
 import Transaction from "@/models/Transaction"
@@ -19,7 +18,13 @@ export async function POST(request: Request) {
     })
 
     await newTransaction.save()
-    return NextResponse.json({ success: true, data: newTransaction }, { status: 201 })
+    
+    // Populate the transaction with category and account data before returning
+    const populatedTransaction = await Transaction.findById(newTransaction._id)
+      .populate("category", "name color")
+      .populate("account", "name")
+    
+    return NextResponse.json({ success: true, data: populatedTransaction }, { status: 201 })
   } catch (error) {
     console.error(error)
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
@@ -57,9 +62,9 @@ export async function GET(request: Request) {
     }
 
     const transactions = await Transaction.find(query)
-      .populate("category", "name")
+      .populate("category", "name color")
       .populate("account", "name")
-      .sort({ date: -1 })
+      .sort({ createdAt: -1 }) // Order by creation date, newest first
 
     return NextResponse.json({ success: true, data: transactions })
   } catch (error) {

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   Sidebar,
   SidebarContent,
@@ -10,18 +11,7 @@ import {
   SidebarFooter,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import {
-  LayoutDashboard,
-  ArrowLeftRight,
-  Wallet,
-  Landmark,
-  TrendingUp,
-  Settings,
-  CreditCard,
-  Goal,
-  Repeat,
-  LogOut,
-} from "lucide-react"
+import { LayoutDashboard, ArrowLeftRight, Wallet, Landmark, TrendingUp, Settings, CreditCard, Goal, Repeat, LogOut } from 'lucide-react'
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -31,6 +21,7 @@ import type { UserSession } from "@/lib/auth"
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transacciones", icon: ArrowLeftRight },
+  { href: "/transfers", label: "Transferencias", icon: ArrowLeftRight },
   { href: "/debts", label: "Deudas", icon: CreditCard },
   { href: "/goals", label: "Objetivos", icon: Goal },
   { href: "/recurring", label: "Recurrentes", icon: Repeat },
@@ -43,10 +34,23 @@ const configItems = [
   { href: "/config/settings", label: "Ajustes", icon: Settings },
 ]
 
-export function AppSidebar({ user, isSetupComplete }: { user: UserSession | null; isSetupComplete: boolean }) {
+export function AppSidebar({ user, initialIsSetupComplete }: { user: UserSession | null; initialIsSetupComplete: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
   const { toast } = useToast()
+  const [isSetupComplete, setIsSetupComplete] = useState(initialIsSetupComplete)
+
+  useEffect(() => {
+    // Client-side check to ensure setup status is up-to-date
+    fetch("/api/setup/status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.data) {
+          const { hasAccounts, hasCategories } = data.data
+          setIsSetupComplete(hasAccounts && hasCategories)
+        }
+      })
+  }, [pathname]) // Re-check on navigation
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" })
