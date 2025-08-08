@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowRight, PlusCircle } from "lucide-react"
 import Link from "next/link"
 import { getTransfers } from "@/lib/data/transfers"
+import { formatEuro } from '@/utils/formatEuro'
 
 export default async function TransfersPage() {
   const transfers = await getTransfers()
@@ -47,7 +48,7 @@ export default async function TransfersPage() {
                       <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     </TableCell>
                     <TableCell>{t.toAccount.name}</TableCell>
-                    <TableCell className="text-right font-medium">€{t.amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatEuro(t.amount)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

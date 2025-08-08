@@ -16,6 +16,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { TransactionDialog } from "./transaction-dialog"
+import { formatEuro } from '@/utils/formatEuro'
 
 function TransactionDetails({ transaction }: { transaction: ITransaction }) {
   return (
@@ -116,7 +117,7 @@ export function TransactionClientPage({ initialTransactions }: { initialTransact
                       transaction.type === "income" ? "text-success" : "text-danger",
                     )}
                   >
-                    {transaction.type === "income" ? "+" : "-"}€{transaction.amount.toFixed(2)}
+                    {transaction.type === "income" ? "+" : "-"} {formatEuro(transaction.amount)}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

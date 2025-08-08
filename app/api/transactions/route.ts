@@ -3,6 +3,7 @@ import dbConnect from "@/lib/dbConnect"
 import Transaction from "@/models/Transaction"
 import mongoose from "mongoose"
 import { requireAuth } from "@/lib/auth"
+import Account from "@/models/Account"
 
 export async function POST(request: Request) {
   try {
@@ -12,18 +13,57 @@ export async function POST(request: Request) {
     await dbConnect()
     const body = await request.json()
 
+    const { type, amount } = body as { type: "income" | "expense"; amount: number }
+    const accountId = new mongoose.Types.ObjectId(body.account)
+
+    // Traer cuenta y verificar pertenencia
+    const account = await Account.findOne({ _id: accountId, userId })
+    if (!account) {
+      return NextResponse.json({ success: false, error: "Cuenta no encontrada." }, { status: 404 })
+    }
+
+    // Si no existe balance, calcularlo desde transacciones e inicial y persistirlo
+    let available: number
+    if (account.balance === undefined || account.balance === null) {
+      const txs = await Transaction.find({ userId, account: account._id }).select("amount type")
+      const net = txs.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0)
+      available = (account.initialBalance || 0) + net
+      await Account.updateOne({ _id: account._id, userId }, { $set: { balance: available } })
+    } else {
+      available = account.balance
+    }
+
+    // Bloquear gastos mayores al disponible
+    if (type === "expense" && amount > available) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "El importe supera el saldo disponible de la cuenta seleccionada.",
+          meta: { available },
+        },
+        { status: 400 },
+      )
+    }
+
+    // Crear transacción
     const newTransaction = new Transaction({
       ...body,
       userId,
     })
-
     await newTransaction.save()
-    
-    // Populate the transaction with category and account data before returning
+
+    // Actualizar saldo de la cuenta incrementalmente
+    if (type === "income") {
+      await Account.updateOne({ _id: accountId, userId }, { $inc: { balance: amount } })
+    } else if (type === "expense") {
+      await Account.updateOne({ _id: accountId, userId }, { $inc: { balance: -amount } })
+    }
+
+    // Devolver con populate
     const populatedTransaction = await Transaction.findById(newTransaction._id)
       .populate("category", "name color")
       .populate("account", "name")
-    
+
     return NextResponse.json({ success: true, data: populatedTransaction }, { status: 201 })
   } catch (error) {
     console.error(error)
@@ -64,7 +104,7 @@ export async function GET(request: Request) {
     const transactions = await Transaction.find(query)
       .populate("category", "name color")
       .populate("account", "name")
-      .sort({ createdAt: -1 }) // Order by creation date, newest first
+      .sort({ createdAt: -1 }) // newest first
 
     return NextResponse.json({ success: true, data: transactions })
   } catch (error) {

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import type { IDebt } from "@/models/Debt"
 import { useToast } from "./ui/use-toast"
+import { formatEuro } from '@/utils/formatEuro'
 
 const formSchema = z.object({
   amount: z.coerce.number().positive("El importe debe ser mayor que cero."),
@@ -30,7 +31,7 @@ export function PaymentForm({ onSuccess, debt }: PaymentFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (values.amount > remainingAmount) {
       form.setError("amount", {
-        message: `El pago no puede superar lo que queda por pagar: €${remainingAmount.toFixed(2)}`,
+        message: `El pago no puede superar lo que queda por pagar: ${formatEuro(remainingAmount)}`,
       })
       return
     }
@@ -57,7 +58,7 @@ export function PaymentForm({ onSuccess, debt }: PaymentFormProps) {
           Deuda con <span className="font-bold">{debt.person}</span>.
         </p>
         <p>
-          Quedan por pagar: <span className="font-bold">€{remainingAmount.toFixed(2)}</span>
+          Quedan por pagar: <span className="font-bold">{formatEuro(remainingAmount)}</span>
         </p>
         <FormField
           name="amount"

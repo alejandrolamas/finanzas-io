@@ -11,6 +11,7 @@ import { RecurringForm } from "./recurring-form"
 import type { IRecurring } from "@/models/Recurring"
 import { useToast } from "./ui/use-toast"
 import { Badge } from "./ui/badge"
+import { formatEuro } from '@/utils/formatEuro'
 
 export function RecurringList({ initialRecurring }: { initialRecurring: any[] }) {
   const [recurringList, setRecurringList] = useState(initialRecurring)
@@ -113,7 +114,7 @@ export function RecurringList({ initialRecurring }: { initialRecurring: any[] })
                   {recurring.frequency}
                 </Badge>
                 <p className={`font-semibold ${recurring.type === "income" ? "text-success" : "text-danger"}`}>
-                  {recurring.type === "income" ? "+" : "-"}€{recurring.amount.toFixed(2)}
+                  {recurring.type === "income" ? "+" : "-"}{formatEuro(recurring.amount)}
                 </p>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

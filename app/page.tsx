@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 import { TransactionDialog } from "@/components/transaction-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import Link from "next/link"
+import { formatEuro } from '@/utils/formatEuro'
 
 const barChartConfig = {
   gastos: {
@@ -106,10 +107,10 @@ export default function HomePage() {
   }
 
   const summaryCards = [
-    { title: "Saldo Total", value: `€${summary.totalBalance?.toFixed(2) ?? 0}`, icon: Landmark },
-    { title: "Ahorros", value: `€${summary.totalSavings?.toFixed(2) ?? 0}`, icon: Banknote },
-    { title: "Deudas", value: `€${summary.totalDebts?.toFixed(2) ?? 0}`, icon: Scale },
-    { title: "Balance Mensual", value: `€${summary.monthlyBalance?.toFixed(2) ?? 0}`, icon: TrendingUp },
+    { title: "Saldo Total", value: formatEuro(summary.totalBalance), icon: Landmark },
+    { title: "Ahorros", value: formatEuro(summary.totalSavings), icon: Banknote },
+    { title: "Deudas", value: formatEuro(summary.totalDebts), icon: Scale },
+    { title: "Balance Mensual", value: formatEuro(summary.monthlyBalance), icon: TrendingUp },
   ]
 
   return (
@@ -166,15 +167,24 @@ export default function HomePage() {
                     <YAxis
                       tickLine={false}
                       axisLine={false}
-                      tickMargin={8}
-                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-                      tickFormatter={(value) => `€${value}`}
-                      width={60}
+                      tickMargin={0}
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tickFormatter={(value) => formatEuro(value)}
+                      width={80}
                     />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar dataKey="ingresos" fill="var(--color-ingresos)" radius={4} />
-                    <Bar dataKey="gastos" fill="var(--color-gastos)" radius={4} />
+                    <Bar 
+                      dataKey="gastos" 
+                      fill="var(--color-gastos)" 
+                      radius={4}
+                      
+                    />
+                    <Bar 
+                      dataKey="ingresos" 
+                      fill="var(--color-ingresos)" 
+                      radius={4} 
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -191,7 +201,7 @@ export default function HomePage() {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="font-medium">{b.name}</span>
                   <span>
-                    €{b.spent.toFixed(2)} / €{b.budget.toFixed(2)}
+                    {formatEuro(b.spent)} / {formatEuro(b.budget)}
                   </span>
                 </div>
                 <Progress

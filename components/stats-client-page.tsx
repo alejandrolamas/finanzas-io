@@ -34,6 +34,7 @@ import jsPDF from "jspdf"
 import { StatsPDFReport } from "./stats-pdf-report"
 import html2canvas from "html2canvas"
 import { SummaryCard } from "./summary-card"
+import { formatEuro } from '@/utils/formatEuro'
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AF19FF", "#FF1943", "#19D4FF"]
 
@@ -199,35 +200,35 @@ export function StatsClientPage({
     return [
       {
         title: "Saldo Total",
-        value: `${summaryData.totalBalance.toFixed(2)}€`,
+        value: formatEuro(summaryData.totalBalance),
         icon: Wallet,
       },
       ...summaryData.accountBalances.map((acc) => ({
         title: `Saldo ${acc.name}`,
-        value: `${acc.balance.toFixed(2)}€`,
+        value: formatEuro(acc.balance),
         icon: Landmark,
       })),
       {
         title: "Ingresos Recurrentes (Mes)",
-        value: `${summaryData.recurringTotals.monthlyIncome.toFixed(2)}€`,
+        value: formatEuro(summaryData.recurringTotals.monthlyIncome),
         icon: ArrowUpCircle,
         colorClass: "text-green-500",
       },
       {
         title: "Gastos Recurrentes (Mes)",
-        value: `${summaryData.recurringTotals.monthlyExpense.toFixed(2)}€`,
+        value: formatEuro(summaryData.recurringTotals.monthlyExpense),
         icon: ArrowDownCircle,
         colorClass: "text-red-500",
       },
       {
         title: "Ingresos Recurrentes (Año)",
-        value: `${summaryData.recurringTotals.annualIncome.toFixed(2)}€`,
+        value: formatEuro(summaryData.recurringTotals.annualIncome),
         icon: CalendarClock,
         colorClass: "text-green-500",
       },
       {
         title: "Gastos Recurrentes (Año)",
-        value: `${summaryData.recurringTotals.annualExpense.toFixed(2)}€`,
+        value: formatEuro(summaryData.recurringTotals.annualExpense),
         icon: CalendarClock,
         colorClass: "text-red-500",
       },
@@ -307,17 +308,17 @@ export function StatsClientPage({
           <CardHeader>
             <CardTitle>Gastos por Categoría</CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px] flex items-center justify-center">
+          <CardContent className="h-[600px] w-[auto] flex items-center justify-center">
             {expensesByCategory.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={expensesByCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label={false} labelLine={false}>
+                  <Pie data={expensesByCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={180} label={false} labelLine={false}>
                     {expensesByCategory.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}€`} />
-                  <Legend verticalAlign="bottom" wrapperStyle={{ lineHeight: "40px" }} />
+                  <RechartsTooltip formatter={(value: number) => formatEuro(value)} />
+                  <Legend verticalAlign="bottom" wrapperStyle={{ lineHeight: "20px" }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -329,17 +330,19 @@ export function StatsClientPage({
           <CardHeader>
             <CardTitle>Ingresos vs Gastos</CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px] flex items-center justify-center">
+          <CardContent className="h-[600px] w-[auto] flex items-center justify-center">
             {incomeVsExpense.income > 0 || incomeVsExpense.expense > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[{ name: "Balance", income: incomeVsExpense.income, expense: incomeVsExpense.expense }]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(value) => `€${value}`} />
-                  <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}€`} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tickFormatter={(value) => formatEuro(value)}
+                      width={100} />
+                  <RechartsTooltip formatter={(value: number) => formatEuro(value)} />
                   <Legend />
-                  <Bar dataKey="income" fill="#22c55e" name="Ingresos" />
                   <Bar dataKey="expense" fill="#ef4444" name="Gastos" />
+                  <Bar dataKey="income" fill="#22c55e" name="Ingresos" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -384,7 +387,7 @@ export function StatsClientPage({
                   <CardTitle className="text-base font-medium">Ingresos (Próx. Mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-green-600">{forecast.nextMonth.income.toFixed(2)}€</p>
+                  <p className="text-2xl font-bold text-green-600">{formatEuro(forecast.nextMonth.income)}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -392,7 +395,7 @@ export function StatsClientPage({
                   <CardTitle className="text-base font-medium">Gastos (Próx. Mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-red-600">{forecast.nextMonth.expenses.toFixed(2)}€</p>
+                  <p className="text-2xl font-bold text-red-600">{formatEuro(forecast.nextMonth.expenses)}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -400,7 +403,7 @@ export function StatsClientPage({
                   <CardTitle className="text-base font-medium">Ahorro (Próx. Mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">{forecast.nextMonth.savings.toFixed(2)}€</p>
+                  <p className="text-2xl font-bold">{formatEuro(forecast.nextMonth.savings)}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -408,7 +411,7 @@ export function StatsClientPage({
                   <CardTitle className="text-base font-medium">Saldo Total (Próx. Mes)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-blue-600">{forecast.nextMonth.totalBalance.toFixed(2)}€</p>
+                  <p className="text-2xl font-bold text-blue-600">{formatEuro(forecast.nextMonth.totalBalance)}</p>
                 </CardContent>
               </Card>
             </div>
@@ -418,8 +421,8 @@ export function StatsClientPage({
                 <LineChart data={forecast.yearlyForecast}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(value) => `${value}€`} />
-                  <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}€`} />
+                  <YAxis tickFormatter={(value) => formatEuro(value)} />
+                  <RechartsTooltip formatter={(value: number) => formatEuro(value)} />
                   <Legend />
                   <Line type="monotone" dataKey="income" stroke="#22c55e" name="Ingresos" />
                   <Line type="monotone" dataKey="expenses" stroke="#ef4444" name="Gastos" />
@@ -471,7 +474,7 @@ export function StatsClientPage({
                           t.type === "income" ? "text-green-600" : "text-red-600"
                         }`}
                       >
-                        {t.type === "income" ? "+" : "-"}{t.amount.toFixed(2)}€
+                        {t.type === "income" ? "+" : "-"}{formatEuro(t.amount)}
                       </TableCell>
                     </TableRow>
                   ))

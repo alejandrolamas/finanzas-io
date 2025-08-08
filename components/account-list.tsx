@@ -10,6 +10,7 @@ import { MoreHorizontal, PlusCircle, Trash2, Edit } from "lucide-react"
 import { AccountForm } from "./account-form"
 import type { IAccount } from "@/models/Account"
 import { useToast } from "./ui/use-toast"
+import { formatEuro } from '@/utils/formatEuro'
 
 export function AccountList({ initialAccounts }: { initialAccounts: IAccount[] }) {
   const [accounts, setAccounts] = useState<IAccount[]>(initialAccounts)
@@ -45,12 +46,12 @@ export function AccountList({ initialAccounts }: { initialAccounts: IAccount[] }
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Tus Cuentas</CardTitle>
+        <CardTitle>Tus cuentas</CardTitle>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditingAccount(null)}>
               <PlusCircle className="h-4 w-4 mr-2" />
-              Añadir Cuenta
+              Añadir cuenta
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -78,7 +79,7 @@ export function AccountList({ initialAccounts }: { initialAccounts: IAccount[] }
                 </div>
               </div>
               <div className="flex items-center gap-2 w-full justify-between sm:w-auto">
-                <p className="font-semibold">€{account.initialBalance.toFixed(2)}</p>
+                <p className="font-semibold">{formatEuro(account.initialBalance)}</p>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">

@@ -8,6 +8,7 @@ export interface IAccount extends Document {
   bank?: string
   color?: string
   userId: Schema.Types.ObjectId
+  balance?: number
 }
 
 const AccountSchema = new Schema<IAccount>(
@@ -18,6 +19,12 @@ const AccountSchema = new Schema<IAccount>(
     bank: { type: String, trim: true },
     color: { type: String, trim: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    balance: {
+      type: Number,
+      default: function (this: IAccount) {
+        return this.initialBalance || 0
+      },
+    },
   },
   { timestamps: true },
 )

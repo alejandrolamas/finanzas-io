@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from 'next/font/google'
+import { Inter } from "next/font/google"
 import "./globals.css"
 import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -12,6 +12,7 @@ import { FloatingChatButton } from "@/components/floating-chat-button"
 import { getCurrentUser } from "@/lib/auth"
 import { getAccounts } from "@/lib/data/accounts"
 import { getCategories } from "@/lib/data/categories"
+import BalanceRefresher from "@/components/balance-refresher"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -40,15 +41,17 @@ export default async function RootLayout({
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <SidebarProvider>
-            {user && <AppSidebar user={user} initialIsSetupComplete={isSetupComplete} />}
+            <AppSidebar user={user} isSetupComplete={isSetupComplete} />
             <SidebarInset>
               <div className="w-full max-w-7xl mx-auto p-4 md:p-8 lg:p-10 pb-20 md:pb-8">{children}</div>
             </SidebarInset>
-            {user && <MobileNav initialIsSetupComplete={isSetupComplete} />}
+            <MobileNav isSetupComplete={isSetupComplete} />
             <Toaster />
             {user && <FloatingChatButton />}
           </SidebarProvider>
         </ThemeProvider>
+        {/* Recalcula saldos en segundo plano si alguna cuenta no tiene balance */}
+        <BalanceRefresher />
       </body>
     </html>
   )
