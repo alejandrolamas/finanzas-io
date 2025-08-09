@@ -30,7 +30,7 @@ export default function HomePage() {
   const [summary, setSummary] = useState<any>(null)
   const [stats, setStats] = useState<any>(null)
   const [budgets, setBudgets] = useState<any>(null)
-  const [setupStatus, setSetupStatus] = useState<{ hasAccounts: boolean; hasCategories: boolean } | null>(null)
+  const [setupStatus, setSetupStatus] = useState<{ hasAccounts: boolean; hasCategories: boolean, hasEmail: boolean } | null>(null)
   const router = useRouter()
 
   const isLoading = !summary || !stats || !budgets || !setupStatus
@@ -59,7 +59,7 @@ export default function HomePage() {
         setSummary({})
         setStats({})
         setBudgets([])
-        setSetupStatus({ hasAccounts: false, hasCategories: false })
+        setSetupStatus({ hasAccounts: false, hasCategories: false, hasEmail: false })
       }
     }
     fetchData()
@@ -67,7 +67,7 @@ export default function HomePage() {
 
   if (isLoading) return <div className="text-center text-muted-foreground">Cargando dashboard...</div>
 
-  const isSetupComplete = setupStatus?.hasAccounts && setupStatus?.hasCategories
+  const isSetupComplete = setupStatus?.hasAccounts && setupStatus?.hasCategories && setupStatus?.hasEmail
 
   if (!isSetupComplete) {
     return (
@@ -97,6 +97,18 @@ export default function HomePage() {
                 Necesitas al menos una categoría (ej: "Comida", "Transporte") para clasificar tus gastos.
                 <Link href="/config/categories" className="font-bold text-primary hover:underline ml-2">
                   Añadir categoría
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+          {!setupStatus?.hasEmail && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Configura tu email</AlertTitle>
+              <AlertDescription>
+                Añade tu email para recibir notificaciones y alertas importantes.
+                <Link href="/config/settings" className="font-bold text-primary hover:underline ml-2">
+                  Configurar email
                 </Link>
               </AlertDescription>
             </Alert>

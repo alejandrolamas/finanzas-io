@@ -1,10 +1,12 @@
 // lib/auth.ts
 import { cookies } from "next/headers"
 import mongoose from "mongoose"
+import { log } from "console"
 
 export interface UserSession {
   userId: string
   username: string
+  email?: string
 }
 
 export async function getCurrentUser(): Promise<UserSession | null> {
@@ -22,7 +24,6 @@ export async function getCurrentUser(): Promise<UserSession | null> {
     if (!mongoose.Types.ObjectId.isValid(sessionData.userId)) {
       return null
     }
-
     return sessionData
   } catch (error) {
     console.error("Error getting current user:", error)
@@ -33,7 +34,6 @@ export async function getCurrentUser(): Promise<UserSession | null> {
 export async function requireAuth(): Promise<UserSession> {
   const user = await getCurrentUser()
   if (!user) {
-    // En un entorno real, esto debería lanzar un error que resulte en una redirección
     throw new Error("Authentication required")
   }
   return user

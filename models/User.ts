@@ -4,6 +4,7 @@ import { type Document, Schema, models, model } from "mongoose"
 export interface IUser extends Document {
   username: string
   password: string
+  email?: string
 }
 
 const UserSchema = new Schema<IUser>(
@@ -18,6 +19,13 @@ const UserSchema = new Schema<IUser>(
     password: {
       type: String,
       required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
   },
   { timestamps: true },

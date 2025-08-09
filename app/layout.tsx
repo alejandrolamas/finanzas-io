@@ -12,6 +12,7 @@ import { FloatingChatButton } from "@/components/floating-chat-button"
 import { getCurrentUser } from "@/lib/auth"
 import { getAccounts } from "@/lib/data/accounts"
 import { getCategories } from "@/lib/data/categories"
+import { getUserEmail } from "@/lib/data/email"
 import BalanceRefresher from "@/components/balance-refresher"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -31,10 +32,12 @@ export default async function RootLayout({
   // Fetch setup data only if user is logged in
   const accounts = user ? await getAccounts() : []
   const categories = user ? await getCategories() : []
+  const email = user ? await getUserEmail() : []
 
   const hasAccounts = accounts.length > 0
   const hasCategories = categories.length > 0
-  const isSetupComplete = hasAccounts && hasCategories
+  const hasEmail = email !== null
+  const isSetupComplete = hasAccounts && hasCategories && hasEmail
 
   return (
     <html lang="es" suppressHydrationWarning>

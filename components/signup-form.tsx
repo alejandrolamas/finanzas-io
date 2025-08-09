@@ -14,6 +14,7 @@ export function SignupForm() {
   const router = useRouter()
   const { toast } = useToast()
   const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -30,7 +31,7 @@ export function SignupForm() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, email }),
       })
 
       if (!res.ok) {
@@ -66,6 +67,17 @@ export function SignupForm() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="email-signup">Email</Label>
+            <Input
+              id="email-signup"
+              type="email"
+              placeholder="Tu email"
+              required
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="space-y-2">

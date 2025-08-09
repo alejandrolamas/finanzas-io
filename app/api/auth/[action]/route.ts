@@ -5,10 +5,11 @@ import dbConnect from "@/lib/dbConnect"
 import User from "@/models/User"
 import bcrypt from "bcryptjs"
 import { requireAuth } from "@/lib/auth"
+import { log } from "console"
 
-async function setAuthCookies(userId: string, username: string) {
+async function setAuthCookies(userId: string, username: string, email?: string) {
   const cookieStore = cookies()
-  const sessionData = { userId, username }
+  const sessionData = { userId, username, email: email ? email : null }
 
   cookieStore.set("session", JSON.stringify(sessionData), {
     httpOnly: true,
@@ -38,7 +39,11 @@ export async function POST(request: Request, { params }: { params: { action: str
       const newUser = new User({ username, password: hashedPassword })
       await newUser.save()
 
-      await setAuthCookies(newUser._id.toString(), newUser.username)
+        await setAuthCookies(
+          newUser._id.toString(),
+          newUser.username,
+          undefined
+        )
 
       return NextResponse.json({ success: true, data: { userId: newUser._id, username: newUser.username } })
     } catch (error) {
@@ -48,7 +53,7 @@ export async function POST(request: Request, { params }: { params: { action: str
 
   if (action === "signup") {
     try {
-      const { username, password } = await request.json()
+      const { username, password, email } = await request.json()
       if (!password || password.length < 6) {
         return NextResponse.json(
           { success: false, error: "La contraseña debe tener al menos 6 caracteres." },
@@ -60,13 +65,22 @@ export async function POST(request: Request, { params }: { params: { action: str
         return NextResponse.json({ success: false, error: "El nombre de usuario ya existe." }, { status: 409 })
       }
 
+      const existingEmail = await User.findOne({ email: email.toLowerCase() })
+      if (existingEmail) {
+        return NextResponse.json({ success: false, error: "El email ya está en uso." }, { status: 409 })
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10)
-      const newUser = new User({ username, password: hashedPassword })
+      const newUser = new User({ username, password: hashedPassword, email: email.toLowerCase() })
       await newUser.save()
 
-      await setAuthCookies(newUser._id.toString(), newUser.username)
+        await setAuthCookies(
+          newUser._id.toString(),
+          newUser.username,
+          newUser.email ? newUser.email.toLowerCase() : undefined
+        )
 
-      return NextResponse.json({ success: true, data: { userId: newUser._id, username: newUser.username } })
+      return NextResponse.json({ success: true, data: { userId: newUser._id, username: newUser.username, email: newUser.email } })
     } catch (error) {
       return NextResponse.json({ success: false, error: "Error durante el registro." }, { status: 500 })
     }
@@ -75,7 +89,12 @@ export async function POST(request: Request, { params }: { params: { action: str
   if (action === "login") {
     try {
       const { username, password } = await request.json()
-      const user = await User.findOne({ username: username.toLowerCase() })
+      const user = await User.findOne({
+        $or: [
+          { username: username.toLowerCase() },
+          { email: username.toLowerCase() }
+        ]
+      })
 
       if (!user) {
         return NextResponse.json({ success: false, error: "Credenciales inválidas" }, { status: 401 })
@@ -86,7 +105,11 @@ export async function POST(request: Request, { params }: { params: { action: str
         return NextResponse.json({ success: false, error: "Credenciales inválidas" }, { status: 401 })
       }
 
-      await setAuthCookies(user._id.toString(), user.username)
+        await setAuthCookies(
+          user._id.toString(),
+          user.username,
+          user.email ? user.email.toLowerCase() : undefined
+        )
 
       return NextResponse.json({ success: true })
     } catch (error) {
@@ -129,6 +152,38 @@ export async function POST(request: Request, { params }: { params: { action: str
       return NextResponse.json({ success: true, message: "Contraseña actualizada con éxito." })
     } catch (error) {
       return NextResponse.json({ success: false, error: "Error al cambiar la contraseña." }, { status: 500 })
+    }
+  }
+
+  if (action === "set-email") {
+    try {
+      const { userId } = await requireAuth()
+      const { email } = await request.json()
+
+      log(`Setting email for user ${userId}: ${email}`)
+
+      if (!email || !email.includes("@")) {
+        return NextResponse.json({ success: false, error: "Email inválido." }, { status: 400 })
+      }
+
+      const user = await User.findById(userId)
+      if (!user) {
+        return NextResponse.json({ success: false, error: "Usuario no encontrado." }, { status: 404 })
+      }
+
+      const existingEmail = await User.findOne({ email: email.toLowerCase() })
+      if (existingEmail && existingEmail._id.toString() !== userId) {
+        return NextResponse.json({ success: false, error: "El email ya está en uso." }, { status: 409 })
+      }
+
+    user.email = email.toLowerCase()
+    await user.save()
+
+    await setAuthCookies(user._id.toString(), user.username, user.email)
+
+    return NextResponse.json({ success: true, message: "Email actualizado con éxito." })
+    } catch (error) {
+      return NextResponse.json({ success: false, error: "Error al actualizar el email." }, { status: 500 })
     }
   }
 
